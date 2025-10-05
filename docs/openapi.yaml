@@ -1,0 +1,595 @@
+openapi: 3.1.0
+info:
+  title: TikTok Live Connector API
+  description: |
+    A comprehensive Node.js TypeScript API server that connects to TikTok Live streams and forwards **ALL 43+ available events** to external webhooks.
+    
+    ## Features
+    - 🎥 Real-time TikTok Live stream monitoring
+    - 🔌 Webhook forwarding to external systems (n8n, Zapier, etc.)
+    - 🌐 RESTful API for webhook management
+    - 🔒 API key authentication and rate limiting
+    - 📝 Comprehensive event logging
+    - ⚡ Real-time event processing
+    - 🛡️ Security middleware (Helmet, CORS)
+    - 🔄 Automatic retry logic for failed webhooks
+    
+    ## Event Coverage
+    This API implements **ALL 43+ events** from the TikTok Live Connector library:
+    - **Control Events (6)**: connected, disconnected, error, streamEnd, rawData, decodedData
+    - **User Interaction Events (15)**: chat, gift, like, member, follow, share, social, emote, envelope, questionNew, roomUpdate, roomMessage, captionMessage, imDelete
+    - **Battle & Competition Events (7)**: linkMicBattle, linkMicArmies, linkMicBattlePunishFinish, linkMicBattleTask, linkMicFanTicketMethod, linkMicMethod, superFan
+    - **Advanced Features (15+)**: liveIntro, controlMessage, barrage, hourlyRank, goalUpdate, inRoomBanner, rankUpdate, pollMessage, rankText, unauthorizedMember, oecLiveShopping, msgDetect, linkMessage, roomVerify, linkLayer, roomPin
+  version: 1.0.0
+  contact:
+    name: TikTok Live Connector API
+    url: https://github.com/your-org/tiktok-live-connector
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://your-domain.com
+    description: Production server
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /api/status:
+    get:
+      summary: Get system status
+      description: Returns the current status of the TikTok Live connection and system health
+      tags:
+        - System
+      responses:
+        '200':
+          description: System status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/events:
+    get:
+      summary: Get recent events
+      description: Retrieve a list of recent TikTok Live events
+      tags:
+        - Events
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of events to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+        - name: type
+          in: query
+          description: Filter events by type
+          schema:
+            type: string
+            enum: [connected, disconnected, error, streamEnd, chat, gift, like, member, follow, share, social, emote, envelope, questionNew, roomUpdate, linkMicBattle, linkMicArmies, liveIntro, controlMessage, barrage, hourlyRank, goalUpdate, roomMessage, captionMessage, imDelete, inRoomBanner, rankUpdate, pollMessage, rankText, linkMicBattlePunishFinish, linkMicBattleTask, linkMicFanTicketMethod, linkMicMethod, unauthorizedMember, oecLiveShopping, msgDetect, linkMessage, roomVerify, linkLayer, roomPin, superFan, rawData, decodedData]
+        - name: since
+          in: query
+          description: Get events since this timestamp (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Events retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TikTokEvent'
+                  count:
+                    type: integer
+                    description: Number of events returned
+                  hasMore:
+                    type: boolean
+                    description: Whether there are more events available
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/webhooks:
+    get:
+      summary: List webhook endpoints
+      description: Retrieve all registered webhook endpoints
+      tags:
+        - Webhooks
+      responses:
+        '200':
+          description: Webhooks retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  webhooks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WebhookEndpoint'
+                  count:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      summary: Register a new webhook endpoint
+      description: Add a new webhook endpoint to receive TikTok Live events
+      tags:
+        - Webhooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWebhookRequest'
+      responses:
+        '201':
+          description: Webhook registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookEndpoint'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Webhook URL already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/webhooks/{id}:
+    delete:
+      summary: Delete a webhook endpoint
+      description: Remove a webhook endpoint from the system
+      tags:
+        - Webhooks
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Webhook ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Webhook deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Webhook deleted successfully"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Webhook not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/webhooks/test:
+    post:
+      summary: Test a webhook endpoint
+      description: Send a test event to a webhook endpoint to verify connectivity
+      tags:
+        - Webhooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: Webhook URL to test
+                  example: "https://example.com/webhook"
+              required:
+                - url
+      responses:
+        '200':
+          description: Webhook test successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Webhook test successful"
+                  responseTime:
+                    type: number
+                    description: Response time in milliseconds
+                    example: 250
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /webhook/receive:
+    post:
+      summary: Receive webhook events
+      description: Internal endpoint for receiving webhook events (typically not used directly)
+      tags:
+        - Internal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookPayload'
+      responses:
+        '200':
+          description: Event received successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication
+
+  schemas:
+    SystemStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+          example: "healthy"
+        tiktok:
+          type: object
+          properties:
+            connected:
+              type: boolean
+              example: true
+            username:
+              type: string
+              example: "kimbokesq"
+            uptime:
+              type: number
+              description: Connection uptime in seconds
+              example: 3600
+        server:
+          type: object
+          properties:
+            uptime:
+              type: number
+              description: Server uptime in seconds
+              example: 7200
+            memory:
+              type: object
+              properties:
+                used:
+                  type: number
+                  description: Used memory in bytes
+                total:
+                  type: number
+                  description: Total memory in bytes
+            cpu:
+              type: object
+              properties:
+                usage:
+                  type: number
+                  description: CPU usage percentage
+                  example: 15.5
+        webhooks:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 3
+            active:
+              type: integer
+              example: 2
+            failed:
+              type: integer
+              example: 1
+        events:
+          type: object
+          properties:
+            totalProcessed:
+              type: integer
+              example: 1250
+            lastEventTime:
+              type: string
+              format: date-time
+              example: "2024-01-01T12:30:00.000Z"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-01T12:30:00.000Z"
+
+    TikTokEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        type:
+          type: string
+          enum: [connected, disconnected, error, streamEnd, chat, gift, like, member, follow, share, social, emote, envelope, questionNew, roomUpdate, linkMicBattle, linkMicArmies, liveIntro, controlMessage, barrage, hourlyRank, goalUpdate, roomMessage, captionMessage, imDelete, inRoomBanner, rankUpdate, pollMessage, rankText, linkMicBattlePunishFinish, linkMicBattleTask, linkMicFanTicketMethod, linkMicMethod, unauthorizedMember, oecLiveShopping, msgDetect, linkMessage, roomVerify, linkLayer, roomPin, superFan, rawData, decodedData]
+          example: "chat"
+        data:
+          type: object
+          description: Event-specific data payload
+          example:
+            username: "user123"
+            message: "Hello world!"
+            userId: "123456789"
+            profilePictureUrl: "https://example.com/avatar.jpg"
+            nickname: "User Display Name"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-01T12:30:00.000Z"
+      required:
+        - id
+        - type
+        - data
+        - timestamp
+
+    WebhookEndpoint:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        name:
+          type: string
+          example: "n8n Webhook"
+        url:
+          type: string
+          format: uri
+          example: "https://jagoanresi.space/webhook/76e78482-fc54-4c18-8c8b-ed35f80b1880"
+        secret:
+          type: string
+          description: Optional secret for signature verification
+          example: "my-secret-key"
+        headers:
+          type: object
+          description: Additional headers to send with webhook requests
+          example:
+            Authorization: "Bearer token123"
+            Content-Type: "application/json"
+        events:
+          type: array
+          items:
+            type: string
+          description: Event types to forward to this webhook (empty array means all events)
+          example: ["chat", "gift", "follow"]
+        active:
+          type: boolean
+          example: true
+        retryCount:
+          type: integer
+          minimum: 0
+          maximum: 5
+          default: 3
+          example: 3
+        timeout:
+          type: integer
+          minimum: 1000
+          maximum: 30000
+          default: 5000
+          description: Request timeout in milliseconds
+          example: 5000
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T12:00:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T12:30:00.000Z"
+        lastSuccess:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-01-01T12:29:00.000Z"
+        lastError:
+          type: string
+          nullable: true
+          example: "HTTP 404: Not Found"
+        successCount:
+          type: integer
+          example: 125
+        errorCount:
+          type: integer
+          example: 3
+      required:
+        - id
+        - name
+        - url
+        - active
+        - createdAt
+
+    CreateWebhookRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "n8n Webhook"
+        url:
+          type: string
+          format: uri
+          example: "https://jagoanresi.space/webhook/76e78482-fc54-4c18-8c8b-ed35f80b1880"
+        secret:
+          type: string
+          minLength: 8
+          maxLength: 256
+          description: Optional secret for signature verification
+          example: "my-secret-key"
+        headers:
+          type: object
+          description: Additional headers to send with webhook requests
+          example:
+            Authorization: "Bearer token123"
+        events:
+          type: array
+          items:
+            type: string
+            enum: [connected, disconnected, error, streamEnd, chat, gift, like, member, follow, share, social, emote, envelope, questionNew, roomUpdate, linkMicBattle, linkMicArmies, liveIntro, controlMessage, barrage, hourlyRank, goalUpdate, roomMessage, captionMessage, imDelete, inRoomBanner, rankUpdate, pollMessage, rankText, linkMicBattlePunishFinish, linkMicBattleTask, linkMicFanTicketMethod, linkMicMethod, unauthorizedMember, oecLiveShopping, msgDetect, linkMessage, roomVerify, linkLayer, roomPin, superFan]
+          description: Event types to forward to this webhook (empty array means all events)
+          example: ["chat", "gift", "follow"]
+        retryCount:
+          type: integer
+          minimum: 0
+          maximum: 5
+          default: 3
+          example: 3
+        timeout:
+          type: integer
+          minimum: 1000
+          maximum: 30000
+          default: 5000
+          description: Request timeout in milliseconds
+          example: 5000
+      required:
+        - name
+        - url
+
+    WebhookPayload:
+      type: object
+      properties:
+        event:
+          $ref: '#/components/schemas/TikTokEvent'
+        webhook:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            url:
+              type: string
+              format: uri
+            name:
+              type: string
+          required:
+            - id
+            - url
+            - name
+        signature:
+          type: string
+          description: HMAC signature for payload verification (if secret is configured)
+          example: "sha256=abc123..."
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-01T12:30:00.000Z"
+      required:
+        - event
+        - webhook
+        - timestamp
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Invalid request"
+        message:
+          type: string
+          example: "The provided URL is not valid"
+        code:
+          type: string
+          example: "INVALID_URL"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-01T12:30:00.000Z"
+      required:
+        - error
+        - message
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Bad Request"
+            message: "Invalid JSON payload"
+            code: "INVALID_JSON"
+            timestamp: "2024-01-01T12:30:00.000Z"
+
+    Unauthorized:
+      description: Unauthorized - Invalid or missing API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Unauthorized"
+            message: "Invalid or missing API key"
+            code: "UNAUTHORIZED"
+            timestamp: "2024-01-01T12:30:00.000Z"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Internal Server Error"
+            message: "An unexpected error occurred"
+            code: "INTERNAL_ERROR"
+            timestamp: "2024-01-01T12:30:00.000Z"
+
+tags:
+  - name: System
+    description: System status and health monitoring
+  - name: Events
+    description: TikTok Live event management and retrieval
+  - name: Webhooks
+    description: Webhook endpoint management and testing
+  - name: Internal
+    description: Internal API endpoints
