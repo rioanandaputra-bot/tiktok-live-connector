@@ -5,7 +5,7 @@
 Dokumentasi API lengkap tersedia dalam beberapa format:
 
 ### 🌐 Interactive Swagger UI
-- **URL**: [http://localhost:3001/api/docs](http://localhost:3001/api/docs)
+- **URL**: [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
 - **Features**: 
   - Interactive API testing
   - Complete endpoint documentation
@@ -14,15 +14,15 @@ Dokumentasi API lengkap tersedia dalam beberapa format:
   - Authentication testing
 
 ### 📄 OpenAPI Specification Files
-- **YAML**: [http://localhost:3001/api/docs/openapi.yaml](http://localhost:3001/api/docs/openapi.yaml)
-- **JSON**: [http://localhost:3001/api/docs/openapi.json](http://localhost:3001/api/docs/openapi.json)
+- **YAML**: [http://localhost:3000/api/docs/openapi.yaml](http://localhost:3000/api/docs/openapi.yaml)
+- **JSON**: [http://localhost:3000/api/docs/openapi.json](http://localhost:3000/api/docs/openapi.json)
 
 ## 🔐 Authentication
 
 All API endpoints require API key authentication:
 
 ```bash
-curl -H "X-API-Key: your_api_key_here" http://localhost:3001/api/status
+curl -H "X-API-Key: your_api_key_here" http://localhost:3000/api/status
 ```
 
 Set your API key in `.env` file:
@@ -35,13 +35,13 @@ API_KEY=your_secret_api_key
 ### 1. Check System Status
 ```bash
 curl -H "X-API-Key: your_api_key" \
-  http://localhost:3001/api/status
+  http://localhost:3000/api/status
 ```
 
 ### 2. Get Recent Events
 ```bash
 curl -H "X-API-Key: your_api_key" \
-  "http://localhost:3001/api/events?limit=10&type=chat"
+  "http://localhost:3000/api/events?limit=10&type=chat"
 ```
 
 ### 3. Register a Webhook
@@ -54,7 +54,7 @@ curl -X POST \
     "url": "https://example.com/webhook",
     "events": ["chat", "gift", "follow"]
   }' \
-  http://localhost:3001/api/webhooks
+  http://localhost:3000/api/webhooks
 ```
 
 ### 4. Test a Webhook
@@ -65,7 +65,7 @@ curl -X POST \
   -d '{
     "url": "https://example.com/webhook"
   }' \
-  http://localhost:3001/api/webhooks/test
+  http://localhost:3000/api/webhooks/test
 ```
 
 ## 📡 Available Endpoints
@@ -170,7 +170,7 @@ Filter events by type when retrieving or setting up webhooks:
 ```bash
 # Get only chat events
 curl -H "X-API-Key: your_api_key" \
-  "http://localhost:3001/api/events?type=chat"
+  "http://localhost:3000/api/events?type=chat"
 
 # Webhook for specific events only
 curl -X POST \
@@ -181,7 +181,7 @@ curl -X POST \
     "url": "https://example.com/webhook",
     "events": ["chat", "gift"]
   }' \
-  http://localhost:3001/api/webhooks
+  http://localhost:3000/api/webhooks
 ```
 
 ## 🔄 Retry Logic
@@ -198,7 +198,7 @@ Use the status endpoint to monitor system health:
 
 ```bash
 curl -H "X-API-Key: your_api_key" \
-  http://localhost:3001/api/status
+  http://localhost:3000/api/status
 ```
 
 Returns detailed information about:
@@ -210,8 +210,8 @@ Returns detailed information about:
 ## 📖 Complete Documentation
 
 For complete API documentation with interactive testing, visit:
-**[http://localhost:3001/api/docs](http://localhost:3001/api/docs)**
+**[http://localhost:3000/api/docs](http://localhost:3000/api/docs)**
 
 ---
 
-**Note**: Replace `localhost:3001` with your actual server URL in production.
+**Note**: Replace `localhost:3000` with your actual server URL in production.

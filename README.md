@@ -64,7 +64,7 @@ This project implements **ALL 43+ events** available from the TikTok Live Connec
 Complete API documentation is available in multiple formats:
 
 ### 🌐 Interactive Swagger UI
-Access the interactive API documentation at: **[http://localhost:3001/api/docs](http://localhost:3001/api/docs)**
+Access the interactive API documentation at: **[http://localhost:3000/api/docs](http://localhost:3000/api/docs)**
 
 Features:
 - **Interactive Testing**: Test all endpoints directly from the browser
@@ -82,15 +82,15 @@ Features:
 
 ```bash
 # Check system status
-curl -H "X-API-Key: your_api_key" http://localhost:3001/api/status
+curl -H "X-API-Key: your_api_key" http://localhost:3000/api/status
 
 # Get recent events
-curl -H "X-API-Key: your_api_key" http://localhost:3001/api/events
+curl -H "X-API-Key: your_api_key" http://localhost:3000/api/events
 
 # Register a webhook
 curl -X POST -H "Content-Type: application/json" -H "X-API-Key: your_api_key" \
   -d '{"name":"My Webhook","url":"https://example.com/webhook"}' \
-  http://localhost:3001/api/webhooks
+  http://localhost:3000/api/webhooks
 ```
 
 ## Features
@@ -126,7 +126,7 @@ Edit `.env` with your settings:
 NODE_ENV=development
 PORT=3000
 TIKTOK_USERNAME=your_tiktok_username
-WEBHOOK_ENDPOINTS=http://localhost:3001/webhook,https://example.com/webhook
+WEBHOOK_ENDPOINTS=http://localhost:3000/webhook,https://example.com/webhook
 WEBHOOK_SECRET=your_webhook_secret_key
 API_KEY=your_api_key
 ```
